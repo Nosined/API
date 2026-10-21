@@ -1,12 +1,21 @@
-const protocolo = require('express')
+const protocolo = require("express")
 const app = protocolo()
-const exibir = require ('ejs')
-const executar = require ('nodemon')
+const exibir = require ("ejs")
+const executar = require ("nodemon")
+const {MongoClient} = require("mongodb")
 
-const dotenv = require ('dotenv')
+const dotenv = require ("dotenv")
 dotenv.config()
 const url = process.env.DATABASE_URL
-const {MongoClient} = require('mongodb')
+
+//fazer query com _id do mongodb
+const ObjectID = require("mongodb").ObjectId
+
+const client = new MongoClient(url)
+//cria o banco de dados com o nome dPessoas (create database dPessoas)
+const db = client.db("pessoa")
+//cria uma collection com o nome crud (create table crud)
+const collection = db.collection("crud")
 
 app.set('view engine','ejs')
 
@@ -17,4 +26,3 @@ app.listen(3000, function(){
 app.get('/ler', (request, response)=> {
     response.send("Olá mundo")
 })
-

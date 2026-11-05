@@ -1,7 +1,7 @@
-const protocolo = require("express")
-const app = protocolo()
-const exibir = require ("ejs")
-const executar = require ("nodemon")
+const express = require("express")
+const app = express()
+const ejs = require ("ejs")
+
 const {MongoClient} = require("mongodb")
 
 const dotenv = require ("dotenv")
@@ -9,26 +9,76 @@ dotenv.config()
 const url = process.env.DATABASE_URL
 
 //fazer query com _id do mongodb
-const ObjectID = require("mongodb").ObjectId
+const ObjectId = require("mongodb").ObjectId
 
 const client = new MongoClient(url)
-//cria o banco de dados com o nome dPessoas (create database dPessoas)
-const db = client.db("pessoa")
-//cria uma collection com o nome crud (create table crud)
-const collection = db.collection("crud")
-
-const bodyParser = require("body-parser")
-
-app.use(bodyParser.urlencoded({extended: true}))
+let collection
 
 app.set('view engine','ejs')
 
-app.get("/", (req, res) => {
+app.use(express.urlencoded({extended: true}))
+
+app.get("/index", (req, res) => {
     res.render("index.ejs")
 })
 
-app.listen(3000, function(){
-    console.log("O nosso servidor está na porta 3000")
+//Listar todos os registros (Ler/READ)
+app.get("/show", async (req, res) => {
+    const crud = await collection.find().toArray()
+    res.render("show.ejs",{crud})
+})
+
+//criar um novo registro (criar/CREATE)
+app.post("/show", async(req, res) =>{
+    await collection.insertOne({
+        name: req.body.name,
+        surname: req.body.surname
+    })
+    res.redirect("/show")
+})
+
+//visualizar por id
+app.get("/edit/:id", async (req, res) =>{
+    const crud = await collection.find({_id: new ObjectId(req.params.id)}).toArray()
+    res.render("edit.ejs", {crud})
+})
+
+app.post("/edit/:id", async (req, res) => {
+    await collection.updateOne(
+        { _id: new ObjectId(req.params.id)},
+        {
+            $set: {
+                name: req.body.name,
+                surname: req.body.surname
+            }
+        }
+    )
+    res.redirect("/show")
+})
+
+
+
+app.get("/delete/:id", async (req, res) => {
+    await collection.deleteOne({_id: new ObjectId(req.params.id)})
+    res.redirect("/show")
+})
+
+async function iniciar (){
+    await client.connect()
+    //cria o banco de dados com o nome Pessoa (create database dPessoas)
+    const db = client.db("pessoa")
+    //cria uma collection com o nome crud (create table crud)
+    collection = db.collection("crud")
+    console.log("Conectado com o MongoDB")
+
+    app.listen(3000, function(){
+        console.log("O nosso servidor está na porta 3000")
+    })
+
+}
+
+iniciar().catch(function(erro){
+    console.error("Erro ao iniciar a aplicação: ", erro)
 })
 
 app.get('/ler', (req, res)=> {
